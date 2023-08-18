@@ -2,7 +2,6 @@ import person as person
 
 
 class Facility:
-
     def __init__(self, id, name, type, maxOccupancy, medium=5, variance=1):
         self.id = id
         self.name = name

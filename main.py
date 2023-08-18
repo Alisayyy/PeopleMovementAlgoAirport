@@ -5,6 +5,7 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 import pygame
+import config as config
 
 def buildMap():
     # user input
@@ -102,8 +103,9 @@ def compute_next_location(person, airportMap, t):
         # 1- (exit time - current time) / (exit time - entered time), hop to next
         # set all previous facilities to zero, set the remaining to be prob * (1/distance)
 
-        # how many people have left within how many time
-        #
+    if sum(prob_a) == 0:
+        print(prob_a)
+        print(person.currentFacility)
     prob_a = normalize(prob_a)
     prob_b = normalize(prob_b)
     prob_c = normalize(prob_c)
@@ -116,6 +118,10 @@ def compute_next_location(person, airportMap, t):
             final_prob.append(0)
         else:
             final_prob.append(0.1*prob_a[i] + 0.7*prob_b[i] + 0.1*prob_c[i] + 0.1*prob_d[i])
+    if person.departureTime is not None:
+        final_prob[10] = 0
+        final_prob[11] = 0
+        final_prob[12] = 0
     final_prob = normalize(final_prob)
 
     person.nextFacility = number_of_certain_probability(sequence, final_prob)
@@ -127,82 +133,6 @@ def compute_next_location(person, airportMap, t):
 
 
 
-
-
-    # def compute_next_location(agent_object, graph):
-    # a. 1/distance between current facility and the next one;
-    # prob_a = [list of all locations](zero out current location) 1/distance c-n for the rest
-    # normalize it
-
-    # b. 1/distance between destination and the next facility;
-    # prob_b = [list of all locations](zero out destination) 1/distance n-d for the rest
-    # normalize it
-
-    # c. non repeats facility type
-    # 0.1 for current type, 1 for all the rest
-    # normalize it
-
-    # (d. everyone's needs)
-    # food, restroom, shopping, drink, utilities
-
-
-    # e. occupancy of I current and II next destination -> just pass
-    # check occupancy
-    # abs(occupancy of each facility - average occupancy) / max occupancy
-    # average occupancy low for outside
-
-    # f. probability of staying (a function of ...)
-    # average time for every facility
-    # iterate back from movementTrack until hit another facility
-    # if smaller than average time, 0.9 on current facility and 0.1 on others
-    # if greater, 0 on
-    # distribution of staying time in advance
-
-# def calculateNextFacility(person):
-#     currentFacility = airportMap.facilityList[person.currentFacility]
-#     sequence = []
-#     prob = []
-#     # calculate the probability going to every out neighbor
-#     # ???
-#     if currentFacility.id not in person.definedPath:
-#         for id in currentFacility.outNeighbor:
-#             sequence.append(id)
-#             if id in person.facilityPassed or id == currentFacility.id or id not in person.definedPath:
-#                 prob.append(0)
-#             else:
-#                 prob.append(1/currentFacility.getWeight(id) * airportMap.facilityList[id].prob)
-#     else:
-#         for id in currentFacility.outNeighbor:
-#             sequence.append(id)
-#             # cannot go to a facility twice
-#             if id in person.facilityPassed or id == currentFacility.id:
-#                 prob.append(0)
-#             else:
-#                 if id not in person.definedPath:
-#                     prob.append(0.05 * 1/currentFacility.getWeight(id))
-#                 elif person.definedPath.index(id) < person.definedPath.index(currentFacility.id):
-#                     prob.append(0.05 * 1/currentFacility.getWeight(id))
-#                 else:
-#                     probability = 1
-#                     for i in range(person.definedPath.index(currentFacility.id) + 1, person.definedPath.index(id)):
-#                         probability *= (1 - airportMap.facilityList[definedPath[i]].prob)
-#                     probability *= airportMap.facilityList[id].prob
-#                     prob.append(probability)
-#     sumofProb = sum(prob)
-#     for i in range(len(prob)):
-#         prob[i] = prob[i] / sumofProb
-#
-#     nextFacilityId = number_of_certain_probability(sequence, prob)
-#     nextFacility = airportMap.facilityList[nextFacilityId]
-#
-#     person.movementTrack += currentFacility.getWeight(nextFacilityId) * [0]
-#     if nextFacilityId != person.destination:
-#         time_spent = calTimeSpent(nextFacility.medium, nextFacility.variance)
-#         person.movementTrack += time_spent * [nextFacilityId]
-#
-#     person.facilityPassed.add(currentFacility.id)
-#     person.lastFacility = currentFacility.id
-#     person.currentFacility = nextFacilityId
 def plotFacilities():
     screen.blit(myfont.render("gate1", True, (255, 0, 0)), (10, 230))
     pygame.draw.rect(screen, [255, 0, 0], [10, 250, 50, 50], 2)  # 0
@@ -293,16 +223,17 @@ if __name__ == '__main__':
     removedPopulation = []
     num_exits = []
     # TODO： replace with people creation function which can take in flight info
-    for j in range(200):
-        population.append(person.Person(j, 0, 0, 12))
-    for j in range(200, 400):
+    for j in range(100):
+        population.append(person.Person(j, 0, 0, 1, 100))
+    for j in range(100, 200):
         population.append(person.Person(j, 30, 1, 12))
-    num_people_off_plane = 15  # per min
-    for id in population:
-        id.enteredTime = id.arrivalTime + int((id.id % 200) / num_people_off_plane)
+    # num_people_off_plane = 15  # per min
+
+    for person in population:
+        person.enteredTime = person.arrivalTime + int((person.id % 100) / config.num_people_off_plane)
 
     t = 0
-    for t in range(100):
+    for t in range(150):
         for facility in airportMap.facilityList:
             airportMap.facilityList[facility].lastMinNumPeople = len(airportMap.facilityList[facility].people)
             airportMap.facilityList[facility].people = []
@@ -318,7 +249,7 @@ if __name__ == '__main__':
                             person.currentFacility = person.nextFacility
                             person.nextFacility = None
                         person.toBeAppend[1] -= 1
-                    if person.currentFacility != 12 and person.toBeAppend[1] == 0:
+                    if person.currentFacility != 12 and person.currentFacility != person.destination and person.toBeAppend[1] == 0:
                         compute_next_location(person, airportMap, t)
                 person.movementTrack.append(person.currentFacility)
 
@@ -326,10 +257,20 @@ if __name__ == '__main__':
                     airportMap.facilityList[person.currentFacility].people.append(person.id)
 
                 if person.currentFacility == person.destination:
-                    person.exitTime = t
-                    person.toBeAppend[0] = 0
-                    person.toBeAppend[1] = 0
-                    removedPopulation.append(person)
+                    if airportMap.facilityList[person.destination].type == 'Exit':
+                        person.exitTime = t
+                        person.toBeAppend[0] = 0
+                        person.toBeAppend[1] = 0
+                        removedPopulation.append(person)
+                    elif airportMap.facilityList[person.destination].type == 'Gate':
+                        if t == person.departureTime:
+                            person.exitTime = t
+                            removedPopulation.append(person)
+                        else:
+                            person.toBeAppend[1] = person.departureTime - t
+
+
+
 
         # print('t = ', str(t), end=' ')
         # print(len(airportMap.facilityList[12].people))
@@ -346,8 +287,10 @@ if __name__ == '__main__':
     # plt.savefig('perMin.jpg')
 
     # print('sum of people exiting', sum(num_exits))
-    # for person in removedPopulation:
-    #     print_person_info(person)
+    for person in removedPopulation:
+        print_person_info(person)
+    for person in population:
+        print_person_info(person)
     print('remainPopulation: ', len(population))
     print('removedPopulation:', len(removedPopulation))
 
@@ -394,3 +337,6 @@ if __name__ == '__main__':
 # time factor
 
 # infectiouness in hallway
+
+# input
+# that will not crush the general system
