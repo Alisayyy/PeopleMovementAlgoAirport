@@ -30,13 +30,13 @@ def print_person_info(person):
 
 if __name__ == '__main__':
     counter = []
-    counter.append(facility.departureFacility(1, 'counter1', 'counter'))
-    counter.append(facility.departureFacility(2, 'counter2', 'counter'))
-    counter.append(facility.departureFacility(3, 'counter3', 'counter'))
+    counter.append(facility.Facility(1, 'counter1', 'counter'))
+    counter.append(facility.Facility(2, 'counter2', 'counter'))
+    counter.append(facility.Facility(3, 'counter3', 'counter'))
     security = []
-    security.append(facility.departureFacility(4, 'security1', 'security'))
-    security.append(facility.departureFacility(5, 'security2', 'security'))
-    security.append(facility.departureFacility(6, 'security3', 'security'))
+    security.append(facility.Facility(4, 'security1', 'security'))
+    security.append(facility.Facility(5, 'security2', 'security'))
+    security.append(facility.Facility(6, 'security3', 'security'))
 
     population = []
     for i in range(200):
@@ -44,7 +44,7 @@ if __name__ == '__main__':
     removedPopulation = []
 
     t = 0
-    for t in range(250):
+    for t in range(300):
         for person in population:
             if t >= person.enteredTime:
                 if person.currentFacility == None and not person.checked:
