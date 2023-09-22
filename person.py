@@ -1,21 +1,26 @@
 import random
-
+import config as config
 
 class Person:
 
-    def __init__(self, id, arrivalTime, FlightID, destination, departureTime=None):
+    def __init__(self, id, destination, currentFacility=None, arrivalTime=None, checked=None, departureTime=None):
         self.id = id
-        self.arrivalTime = arrivalTime
-        self.enteredTime = 0
-        self.exitTime = -1
-        self.flightID = FlightID
-        self.currentFacility = FlightID
+        self.enteredTime = None
+        self.exitTime = None
+        #self.flightID = flightID
+
+        self.currentFacility = currentFacility
         self.nextFacility = None
         self.destination = destination
         self.movementTrack = []
-        # time to be appended as hallway and facility
-        self.toBeAppend = [0, 0]
+        self.toBeAppend = [0, 0]  # time to be appended as hallway and facility
         self.facilityPassed = []
+
+        self.color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))  # for visualization
+
+        # specific to arrival
+        self.arrivalTime = arrivalTime
+
+        # specific to departure
+        self.checked = checked
         self.departureTime = departureTime
-        # only for visualization
-        self.color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
