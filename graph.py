@@ -4,9 +4,11 @@ class Graph:
     def __init__(self, distanceMap):
         self.facilityList = {}
         self.numFacilities = 0
+        self.counter = []
+        self.security = []
         self.airportMapDistance = distanceMap
 
-    def addFacility(self, id, name, type, maxOccupancy, medium=5, variance=1):
+    def addFacility(self, id, name, type, maxOccupancy=None, medium=None, variance=None):
         newFacility = facility.Facility(id, name, type, maxOccupancy, medium, variance)
         self.facilityList[id] = newFacility
         self.numFacilities += 1
