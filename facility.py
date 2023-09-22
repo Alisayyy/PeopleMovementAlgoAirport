@@ -1,8 +1,8 @@
 import person as person
-
+import myQueue
 
 class Facility:
-    def __init__(self, id, name, type, maxOccupancy, medium=5, variance=1):
+    def __init__(self, id, name, type, maxOccupancy=None, medium=None, variance=None):
         self.id = id
         self.name = name
         self.outNeighbor = {}
@@ -12,6 +12,13 @@ class Facility:
         self.medium = medium
         self.variance = variance
         self.lastMinNumPeople = 0
+        self.peopleInLine = None
+        self.timeCounter = None
+
+        if self.type == "Counter" or self.type == "Security":
+            self.peopleInLine = myQueue.Queue()
+            self.timeCounter = 0
+
 
     def addOutNeighbor(self, nbrid, weight):
         self.outNeighbor[nbrid] = weight
