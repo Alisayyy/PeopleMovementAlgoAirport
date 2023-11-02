@@ -1,37 +1,40 @@
-# airport map info
-mapWidth = 600
-mapLength = 800
-distanceMap = [[0, 7, 1, 6, 9, 11, 13, 6, 13, 12, 18, 19, 21, 15, 15, 15],
-               [7, 0, 6, 4, 7, 9, 11, 1, 12, 10, 16, 17, 19, 16, 16, 16],
-               [1, 6, 0, 5, 8, 10, 12, 4, 10, 9, 17, 18, 20, 14, 14, 14],
-               [6, 4, 5, 0, 3, 5, 7, 3, 3, 4, 12, 13, 15, 10, 10, 10],
-               [9, 7, 8, 3, 0, 2, 4, 4, 5, 2, 9, 10, 12, 6, 6, 6],
-               [11, 9, 10, 5, 2, 0, 2, 7, 6, 1, 7, 8, 10, 8, 8, 8],
-               [13, 11, 12, 7, 4, 2, 0, 8, 6, 1, 5, 6, 8, 9, 9, 9],
-               [6, 1, 4, 3, 4, 7, 8, 0, 11, 13, 15, 16, 18, 5, 5, 5],
-               [13, 12, 10, 3, 5, 6, 6, 11, 0, 3, 14, 15, 17, 2, 2, 2],
-               [12, 10, 9, 4, 2, 1, 1, 13, 3, 0, 8, 9, 11, 4, 4, 4],
-               [18, 16, 17, 12, 9, 7, 5, 15, 14, 8, 0, 1, 2, 0, 0, 0],
-               [19, 17, 18, 13, 10, 8, 6, 16, 15, 9, 1, 0, 2, 0, 0, 0],
-               [21, 19, 20, 15, 12, 10, 8, 18, 17, 11, 2, 2, 0, 0, 0, 0],
-               [15, 16, 14, 10, 6, 8, 9, 5, 2, 4, 0, 0, 0, 0, 0, 0],
-               [15, 16, 14, 10, 6, 8, 9, 5, 2, 4, 0, 0, 0, 0, 0, 0],
-               [15, 16, 14, 10, 6, 8, 9, 5, 2, 4, 0, 0, 0, 0, 0, 0]]
-
+# pygame visualization
+backgroundColor = (230, 230, 230)
+textColor = (0, 0, 0)
+textSize = 25
+personRadius = 5
+facilityBoxSize = 38
 
 
 # departure
 rate_self_checked = 0.1
-check_time = 3 # min
-security_time = 5 # min
+check_time = 2 # min
+security_time = 4 # min
+maxBefore = 200 # if the plane departures at t, earliest person will come to airport at t-200
+minBefore = 100 # if the plane departures at t, latest person will come to airport at t-100
+boardingTime = 30 # min before departure time
+
 
 # arrival
 num_people_off_plane = 15  # per min
 
+
+# flight info
+# flightId : [Arrival("A"), Gate, Time, total number of passengers, number of passengers not from connects]
+# flightId : [Departure("D"), Gate, Time, numPassenger, ExitId, connectedInfo(connectedFlightId: numConnected)]
+flightInfo = {
+    1: ["A", 0, 0, 150, 12, {3: 50}],
+    2: ["A", 1, 30, 200, 12, {3: 10}],
+    3: ["D", 1, 230, 150, 90]
+}
+
+# airport map info
+mapWidth = 600
+mapLength = 800
 # id: [name, type, X, Y, maxOccupancy, medium, variance]
 facilityInfo = {
-    0:  ['gate1',          'Gate',      30,  350, 500,   0,  0],
-    1:  ['gate2',          'Gate',      280, 550, 500,   0,  0],
+    0:  ['gate1',          'Gate',      30,  350, 500,   60,  16],
+    1:  ['gate2',          'Gate',      280, 550, 500,   60,  16],
     2:  ['restroom1',      'Restroom',  130, 350, 20,    3,  1],
     3:  ['restaurant1',    'Food',      280, 350, 50,    15, 4],
     4:  ['store1',         'Shopping',  380, 350, 10,    3,  1],
@@ -51,4 +54,17 @@ facilityInfo = {
     18: ['security3',      'Security',  350, 150, None,   None,  None]
 }
 
-facilityBoxSize = 38
+
+# weight of different factors when calculating the next facility
+weight_1 = 0.1 # distance between current and next facility
+weight_2 = 0.7 # distance between next facility and destination
+weight_3 = 0.1 # facility type
+weight_4 = 0.1 # occupancy of current and next facility
+
+
+# person speed
+minWalkingSpeed = 30
+maxWalkingSpeed = 40
+
+
+
