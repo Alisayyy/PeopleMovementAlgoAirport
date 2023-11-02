@@ -5,7 +5,7 @@ class Facility:
     def __init__(self, id, name, type, maxOccupancy=None, medium=None, variance=None):
         self.id = id
         self.name = name
-        self.outNeighbor = {}
+        self.outNeighbor = {} # does not include itself
         self.people = []
         self.type = type
         self.maxOccupancy = maxOccupancy
