@@ -24,18 +24,19 @@ class Graph:
     def connectAllFacilities(self):
         for ids in self.facilityList:
             for nbrids in self.facilityList:
-                if self.facilityList[ids].type == 'Counter':
-                    if self.facilityList[nbrids].type == 'Security':
-                        self.facilityList[ids].addOutNeighbor(nbrids, self.airportMapDistance[ids][nbrids])
-                elif self.facilityList[ids].type == 'Security':
-                    if self.facilityList[nbrids].type != 'Counter' and self.facilityList[nbrids].type != 'Security':
-                        self.facilityList[ids].addOutNeighbor(nbrids, self.airportMapDistance[ids][nbrids])
-                elif self.facilityList[ids].type == 'BC' or self.facilityList[ids].type == 'Exit':
-                    if self.facilityList[nbrids].type == 'BC' or self.facilityList[nbrids].type == 'Exit':
-                        self.facilityList[ids].addOutNeighbor(nbrids, self.airportMapDistance[ids][nbrids])
-                else:
-                    if self.facilityList[nbrids].type != 'Security' and self.facilityList[nbrids].type != 'Counter':
-                        self.facilityList[ids].addOutNeighbor(nbrids, self.airportMapDistance[ids][nbrids])
+                if nbrids != ids:
+                    if self.facilityList[ids].type == 'Counter':
+                        if self.facilityList[nbrids].type == 'Security':
+                            self.facilityList[ids].addOutNeighbor(nbrids, self.airportMapDistance[ids][nbrids])
+                    elif self.facilityList[ids].type == 'Security':
+                        if self.facilityList[nbrids].type != 'Counter' and self.facilityList[nbrids].type != 'Security':
+                            self.facilityList[ids].addOutNeighbor(nbrids, self.airportMapDistance[ids][nbrids])
+                    elif self.facilityList[ids].type == 'BC' or self.facilityList[ids].type == 'Exit':
+                        if self.facilityList[nbrids].type == 'BC' or self.facilityList[nbrids].type == 'Exit':
+                            self.facilityList[ids].addOutNeighbor(nbrids, self.airportMapDistance[ids][nbrids])
+                    else:
+                        if self.facilityList[nbrids].type != 'Security' and self.facilityList[nbrids].type != 'Counter':
+                            self.facilityList[ids].addOutNeighbor(nbrids, self.airportMapDistance[ids][nbrids])
 
     def getDistance(self, fid1, fid2):
         return self.airportMapDistance[fid1][fid2]
