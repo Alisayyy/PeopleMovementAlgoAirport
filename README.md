@@ -10,8 +10,7 @@ enable Groom Plugin</br>
 ## Predefined path + timer demo
 https://youtu.be/-V6D5WtemMI?si=NFlohOWUl0ob4YYo</br>
 
-
-## Python Scripting
+## Python Scripting (11/5/23)
 Official document:  https://docs.unrealengine.com/5.1/en-US/scripting-the-unreal-editor-using-python/
 
 ### Python setup and install modules with pip
