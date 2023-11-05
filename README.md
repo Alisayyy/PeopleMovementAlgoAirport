@@ -1,9 +1,15 @@
 # UE Progress Record
 
+
 ## MassAI Demo following the video
 https://www.youtube.com/watch?v=2LvUB3_PAhI</br>
-enable Groom Plugin
-//////some change about fragments////////
+enable Groom Plugin</br>
+//////some change about fragments////////</br>
+
+
+## Predefined path + timer demo
+https://youtu.be/-V6D5WtemMI?si=NFlohOWUl0ob4YYo</br>
+
 
 ## Python Scripting
 Official document:  https://docs.unrealengine.com/5.1/en-US/scripting-the-unreal-editor-using-python/
@@ -16,4 +22,13 @@ https://dev.epicgames.com/community/learning/tutorials/lJly/python-install-modul
 Edit -> Project Settings -> Plugins -> Python</br>
 Startup Scripts -> Add Array Element -> add file name (main.py)</br>
 Additional Paths -> Add Array Element -> add path for the file (C:\Users\Administrator\Desktop\airport code\)</br>
+
+### Import csv as Data Table
+create blueprint for movementTrack info ran by main.py: https://youtu.be/Mb2iWvDxXNk?si=3vgWuXV2PQYGRa0g</br>
+in main.py, export csv to the ue project Content Drawer location</br>
+add a "Row" column as the first column in csv</br>
+movementTrack in the form of "(0,0,0,1,1,1)" to be read as Data Table array</br>
+in main.py, export person.movementTrack as str(person.movementTrack).replace('[','(').replace(']',')').replace(' ','') ot match the above format</br>
+click allow import 
+
 
