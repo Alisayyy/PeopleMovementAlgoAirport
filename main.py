@@ -5,6 +5,7 @@ import numpy as np
 import pygame
 import config as cg
 import math
+import csv
 
 
 def buildMap():
@@ -44,16 +45,6 @@ def buildMap():
     return airportMap
 
 
-def number_of_certain_probability(sequence, probability):
-    x = random.uniform(0, 1)
-    cumulative_probability = 0.0
-    for item, item_probability in zip(sequence, probability):
-        cumulative_probability += item_probability
-        if x < cumulative_probability:
-            break
-    return item
-
-
 def calTimeSpent(medium, variance):
     return abs(int(np.random.normal(medium, variance))) + 1
 
@@ -74,7 +65,7 @@ def compute_next_location(person, airportMap, t):
     prob_d = []
 
     if person.departureTime is not None:
-        if person.departureTime - t <= cg.boardingTime:
+        if person.departureTime - t <= cg.boardingDecisionTime:
             person.nextFacility = person.destination
             person.toBeAppend[0] = int(
                 airportMap.getDistance(person.currentFacility, person.nextFacility) / person.speed)
@@ -176,7 +167,7 @@ def print_person_info(person):
 
 
 def createPopulation():
-    populationFront, populationMain, removedPopulation = [], [], []
+    populationFront, populationMain, removedPopulation, populationFtoM = [], [], [], []
     c = 0
 
     for flightId, flightInfo in cg.flightInfo.items():
@@ -210,7 +201,7 @@ def createPopulation():
                 populationFront.append(person.Person(i, gate, checked=checked, departureTime=time, enteredTime= enteredTime))
             c += numPassengerNotConnected
 
-    return populationFront, populationMain, removedPopulation
+    return populationFront, populationMain, removedPopulation, populationFtoM
 
 
 def findLeastCounter(counter):
@@ -231,7 +222,8 @@ def findLeastSecurity(security):
 
 if __name__ == '__main__':
     airportMap = buildMap()
-    populationFront, populationMain, removedPopulation = createPopulation()
+    populationFront, populationMain, removedPopulation, populationFtoM = createPopulation()
+    numMissedPlane = 0
 
     t = 0
     for t in range(300):
@@ -263,8 +255,7 @@ if __name__ == '__main__':
                 s.timeCounter += 1
                 if s.timeCounter == cg.security_time:
                     person = s.peopleInLine.dequeue()
-                    populationMain.append(person)
-                    populationFront.remove(person)
+                    populationFtoM.append(person)
                     s.timeCounter = 0
 
         # main
@@ -302,52 +293,81 @@ if __name__ == '__main__':
                         person.toBeAppend[1] = 0
                         removedPopulation.append(person)
 
-                    elif airportMap.facilityList[person.destination].type == 'Gate' and person.departureTime - t <= 30:
-                        if person.exitTime is None:
-                            person.exitTime = random.randint(t, person.departureTime)
-                            person.toBeAppend[1] = person.exitTime - t
-                        if person.exitTime == t:
+                    elif airportMap.facilityList[person.destination].type == 'Gate':
+                        if person.departureTime < t:
                             removedPopulation.append(person)
+                            numMissedPlane += 1
+                        elif person.departureTime - t <= 30:
+                            if person.exitTime is None:
+                                person.exitTime = random.randint(t, person.departureTime)
+                                person.toBeAppend[1] = person.exitTime - t
+                            if person.exitTime == t:
+                                removedPopulation.append(person)
+                        else:
+                            pass
 
 
         for person in removedPopulation:
             if person in populationMain:
                 populationMain.remove(person)
+        for person in populationFtoM:
+            populationMain.append(person)
+            populationFront.remove(person)
+        populationFtoM = []
 
+    # counter = 0
+    # for person in removedPopulation:
+    #     if person.exitTime - person.enteredTime  + 1 != len(person.movementTrack):
+    #         print_person_info(person)
+    #         counter += 1
+    # print(counter)
+
+    # with open('movementTrack.csv', 'w', newline='') as csvfile:
+    #     csv_writer = csv.writer(csvfile)
+    #     csv_writer.writerow(['ID', 'enteredTime', 'movementTrack', 'exitTime'])
+    #     for person in removedPopulation:
+    #         csv_writer.writerow([person.id, person.enteredTime, person.movementTrack, person.exitTime])
+    #         print_person_info(person)
+    count = 0
     for person in removedPopulation:
-        print_person_info(person)
-
+        if person.exitTime - person.enteredTime + 1 != len(person.movementTrack):
+            print_person_info(person)
+            count += 1
+    print(count)
+    print('number of passengers missed the flight:', numMissedPlane)
     print('populationFront: ', len(populationFront))
     print('populationMain: ', len(populationMain))
     print('removedPopulation:', len(removedPopulation))
 
 
-    pygame.init()
-    screen = pygame.display.set_mode((cg.mapLength, cg.mapWidth))
-    bg_color = cg.backgroundColor
 
-    pygame.display.set_caption("Airport Map")
-    keep_going = True
-    personRadius = cg.personRadius
-    myfont = pygame.font.Font(None, cg.textSize)
-    t = 0
 
-    while keep_going:
-        screen.fill(bg_color)
-        plotFacilities()
-        screen.blit(myfont.render('t = ', True, cg.textColor), (10, 10))
-        screen.blit(myfont.render(str(t), True, cg.textColor), (36, 10))
+    # pygame.init()
+    # screen = pygame.display.set_mode((cg.mapLength, cg.mapWidth))
+    # bg_color = cg.backgroundColor
 
-        for person in removedPopulation:
-            if person.enteredTime <= t <= person.exitTime:
-                currentPosition = person.movementTrack[t-person.enteredTime]
-                plotPersonPosition(currentPosition)
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                keep_going = False
-        pygame.display.update()
-        pygame.time.delay(300)
-        t += 1
-
-    pygame.quit()
+    # pygame.display.set_caption("Airport Map")
+    # keep_going = True
+    # personRadius = cg.personRadius
+    # myfont = pygame.font.Font(None, cg.textSize)
+    # t = 0
+    #
+    # while keep_going:
+    #     screen.fill(bg_color)
+    #     plotFacilities()
+    #     screen.blit(myfont.render('t = ', True, cg.textColor), (10, 10))
+    #     screen.blit(myfont.render(str(t), True, cg.textColor), (36, 10))
+    #
+    #     for person in removedPopulation:
+    #         if person.enteredTime <= t <= person.exitTime:
+    #             currentPosition = person.movementTrack[t-person.enteredTime]
+    #             plotPersonPosition(currentPosition)
+    #
+    #     for event in pygame.event.get():
+    #         if event.type == pygame.QUIT:
+    #             keep_going = False
+    #     pygame.display.update()
+    #     pygame.time.delay(300)
+    #     t += 1
+    #
+    # pygame.quit()
