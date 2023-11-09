@@ -13,6 +13,7 @@ security_time = 4 # min
 maxBefore = 200 # if the plane departures at t, earliest person will come to airport at t-200
 minBefore = 100 # if the plane departures at t, latest person will come to airport at t-100
 boardingTime = 30 # min before departure time
+boardingDecisionTime = 40
 
 
 # arrival
@@ -20,8 +21,8 @@ num_people_off_plane = 15  # per min
 
 
 # flight info
-# flightId : [Arrival("A"), Gate, Time, total number of passengers, number of passengers not from connects]
-# flightId : [Departure("D"), Gate, Time, numPassenger, ExitId, connectedInfo(connectedFlightId: numConnected)]
+# flightId : [Arrival("A"), Gate, Time, numPassenger, ExitId, connectedInfo(connectedFlightId: numConnected)]
+# flightId : Departure("D"), Gate, Time, total number of passengers, number of passengers not from connects]
 flightInfo = {
     1: ["A", 0, 0, 150, 12, {3: 50}],
     2: ["A", 1, 30, 200, 12, {3: 10}],
