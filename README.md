@@ -36,4 +36,8 @@ movementTrack in the form of "(0,0,0,1,1,1)" to be read as Data Table array</br>
 in main.py, export person.movementTrack as str(person.movementTrack).replace('[','(').replace(']',')').replace(' ','') ot match the above format</br>
 click allow import 
 
+## predefined path 11/11/23
+DA_CrowdAgent
+index[0] -> fragments -> agent raduis fragment -> path radius
+
 
