@@ -3,8 +3,14 @@
 
 ## MassAI Demo following the video
 https://www.youtube.com/watch?v=2LvUB3_PAhI</br>
+### Problem1: Groom
 enable Groom Plugin</br>
+
+### Problem2: Fragment
 //////some change about fragments////////</br>
+
+### Problem2: Loop Animation
+ABPCrowd -> select MTN_N_Walk_F -> Settings -> enable Loop Animation</br>
 
 
 ## Predefined path + timer demo
