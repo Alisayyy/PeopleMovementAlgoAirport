@@ -40,4 +40,10 @@ click allow import
 DA_CrowdAgent
 index[0] -> fragments -> agent raduis fragment -> path radius
 
+## avoidance/detour 12/3/23
+BP_character
+character movement: avoidance - use RVOAvoidance
+DA_CrowdAgent
+avoidance parameter change - time, radius
+
 
