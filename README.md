@@ -47,3 +47,6 @@ DA_CrowdAgent
 avoidance parameter change - time, radius
 
 
+## Spawn at a Specific Location and Let Actors Keep Following the Predefined Path
+Set the ZoneGraph around the place wanted to spawn the actors both tag "PED" and tag "Default"</br>
+Let MassSpawner spawn only on tag "Default"</br>
