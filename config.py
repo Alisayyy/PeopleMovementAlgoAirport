@@ -19,7 +19,6 @@ boardingDecisionTime = 40
 # arrival
 num_people_off_plane = 15  # per min
 
-
 # flight info
 # flightId : [Arrival("A"), Gate, Time, numPassenger, ExitId, connectedInfo(connectedFlightId: numConnected)]
 # flightId : Departure("D"), Gate, Time, total number of passengers, number of passengers not from connects]
@@ -63,9 +62,14 @@ weight_3 = 0.1 # facility type
 weight_4 = 0.1 # occupancy of current and next facility
 
 
+# total timesteps for simulation
+runningTimesteps = 300
+
 # person speed
 minWalkingSpeed = 30
 maxWalkingSpeed = 40
 
+# percentage of passengers that are initially infected
+percentageInfected = 0.5
 
 
