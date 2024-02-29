@@ -3,7 +3,7 @@ import config as cg
 
 class Person:
 
-    def __init__(self, id, destination, currentFacility=None, arrivalTime=None, checked=None, departureTime=None, enteredTime = None):
+    def __init__(self, id, destination, infected=0, currentFacility=None, arrivalTime=None, checked=None, departureTime=None, enteredTime = None):
         self.id = id
         self.enteredTime = enteredTime
         self.exitTime = None
@@ -26,3 +26,5 @@ class Person:
         # specific to departure
         self.checked = checked
         self.departureTime = departureTime
+
+        self.infected = infected

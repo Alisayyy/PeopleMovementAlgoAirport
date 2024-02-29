@@ -6,6 +6,7 @@ import pygame
 import config as cg
 import math
 import csv
+import json
 
 
 def buildMap():
@@ -165,9 +166,15 @@ def print_person_info(person):
     print('facilities passed = ', person.facilityPassed)
     print('\n')
 
+def setInfected():
+    probability = random.random()
+    if probability <= cg.percentageInfected:
+        return 1
+    else:
+        return 0
 
 def createPopulation():
-    populationFront, populationMain, removedPopulation, populationFtoM = [], [], [], []
+    populationFront, populationMain, removedPopulation, populationFtoM, initialInfected = [], [], [], [], []
     c = 0
 
     for flightId, flightInfo in cg.flightInfo.items():
@@ -182,26 +189,41 @@ def createPopulation():
                 connectedInfo = flightInfo[5]
                 for key, value in connectedInfo.items():
                     for i in range(c, c+value):
-                        populationMain.append(person.Person(i, cg.flightInfo[key][1], currentFacility=gate,
+                        infect = setInfected()
+                        # if (infect):
+                        #     initialInfected.append(i)
+                        populationMain.append(person.Person(i, cg.flightInfo[key][1], infected=infect, currentFacility=gate,
                                                             arrivalTime=time, departureTime=cg.flightInfo[key][2],
                                                             enteredTime=time + int((i-cBeforeCurrent)/cg.num_people_off_plane)))
+                        if infect:
+                            initialInfected.append(populationMain[-1])
                     c += value
                     numConnected += value
             for i in range(c, c + totalPassenger - numConnected):
-                populationMain.append(person.Person(i, exitId, currentFacility=gate, arrivalTime=time,
+                infect = setInfected()
+                # if (infect):
+                #     initialInfected.append(i)
+                populationMain.append(person.Person(i, exitId, infected=infect, currentFacility=gate, arrivalTime=time,
                                                     enteredTime=time + int((i-cBeforeCurrent)/cg.num_people_off_plane)))
+                if infect:
+                    initialInfected.append(populationMain[-1])
             c += totalPassenger - numConnected
 
         # departure flights
         else:
             numPassengerNotConnected = flightInfo[4]
             for i in range(c, c+numPassengerNotConnected):
+                infect = setInfected()
+                # if (infect):
+                #     initialInfected.append(i)
                 checked = random.random() > (1 - cg.rate_self_checked)
                 enteredTime = random.randint(time-cg.maxBefore, time-cg.minBefore)
-                populationFront.append(person.Person(i, gate, checked=checked, departureTime=time, enteredTime= enteredTime))
+                populationFront.append(person.Person(i, gate, infected=infect, checked=checked, departureTime=time, enteredTime= enteredTime))
+                if infect:
+                    initialInfected.append(populationFront[-1])
             c += numPassengerNotConnected
 
-    return populationFront, populationMain, removedPopulation, populationFtoM
+    return populationFront, populationMain, removedPopulation, populationFtoM, initialInfected
 
 
 def findLeastCounter(counter):
@@ -219,26 +241,99 @@ def findLeastSecurity(security):
             least = s
     return least
 
+def generateDataToInfectiousModel(initialInfected, removedPopulation):
+    facilityInfectedTime = {}
+    peopleFacilityTime = {}
+    # create facilityInfectedTime
+    for person in initialInfected:
+        currentFacility = None
+        enterTime = None
+        for i, facility_id in enumerate(person.movementTrack):
+            if facility_id == -1:
+                if currentFacility is not None:
+                    facilityInfectedTime.setdefault(currentFacility, []).append((enterTime, i + person.enteredTime))
+                    currentFacility = None
+            else:
+                if currentFacility is None:
+                    currentFacility = facility_id
+                    enterTime = i + person.enteredTime
+        if currentFacility is not None:
+            facilityInfectedTime.setdefault(currentFacility, []).append(
+                (enterTime, len(person.movementTrack) + person.enteredTime))
+
+    # create peopleFacilityTime
+    for person in removedPopulation:
+        if person not in initialInfected:
+            peopleFacilityTime.setdefault(person.id, {})
+
+            currentFacility = None
+            enterTime = None
+            for i, facility_id in enumerate(person.movementTrack):
+                if facility_id == -1:
+                    if currentFacility is not None:
+                        peopleFacilityTime[person.id].setdefault(currentFacility, []).append(
+                            (enterTime, i + person.enteredTime))
+                        currentFacility = None
+                else:
+                    if currentFacility is None:
+                        currentFacility = facility_id
+                        enterTime = i + person.enteredTime
+            if currentFacility is not None:
+                peopleFacilityTime[person.id].setdefault(currentFacility, []).append(
+                    (enterTime, len(person.movementTrack) + person.enteredTime))
+
+    with open("formatted_data.py", "w") as f:
+        f.write("facilityInfectedTime = {\n")
+        for facility_id, infected_times in facilityInfectedTime.items():
+            f.write(f"    {facility_id}: {infected_times},\n")
+        f.write("}\n\n")
+
+        f.write("peopleFacilityTime = {\n")
+        for person_id, visited_facilities in peopleFacilityTime.items():
+            f.write(f"    {person_id}: {visited_facilities},\n")
+        f.write("}\n")
+
+
+
 
 if __name__ == '__main__':
     airportMap = buildMap()
-    populationFront, populationMain, removedPopulation, populationFtoM = createPopulation()
+    # initialize passengers based on flight information
+    populationFront, populationMain, removedPopulation, populationFtoM, initialInfected = createPopulation()
     numMissedPlane = 0
+    # data to export
+    timeFacilityPeopleList = {}
+
 
     t = 0
-    for t in range(300):
+    for t in range(cg.runningTimesteps):
+        timeFacilityPeopleList[t] = {}
+
+        # count the number of people in each facility in the previous timestep
+        # and clear people list to create new one for this timestep
+        for facility in airportMap.facilityList:
+            airportMap.facilityList[facility].lastMinNumPeople = len(airportMap.facilityList[facility].people)
+            airportMap.facilityList[facility].people = []
+
         # front
         for person in populationFront:
             if t >= person.enteredTime:
+                # find counter
                 if person.currentFacility == None and not person.checked:
+                    # find a counter and get in queue
                     c = findLeastCounter(airportMap.counter)
                     c.peopleInLine.enqueue(person)
                     person.currentFacility = c.id
+                # find security
                 elif person.currentFacility == None and person.checked:
+                    # find a security and get in queue
                     s = findLeastSecurity(airportMap.security)
                     s.peopleInLine.enqueue(person)
                     person.currentFacility = s.id
                 person.movementTrack.append(person.currentFacility)
+
+                if person.currentFacility is not None and person.currentFacility != -1:
+                    airportMap.facilityList[person.currentFacility].people.append(person.id)
 
         # process each counter
         for c in airportMap.counter:
@@ -259,10 +354,6 @@ if __name__ == '__main__':
                     s.timeCounter = 0
 
         # main
-        for facility in airportMap.facilityList:
-            airportMap.facilityList[facility].lastMinNumPeople = len(airportMap.facilityList[facility].people)
-            airportMap.facilityList[facility].people = []
-
         for person in populationMain:
             if t >= person.enteredTime:
                 # still in hallway
@@ -282,9 +373,6 @@ if __name__ == '__main__':
 
                 # append current position
                 person.movementTrack.append(person.currentFacility)
-
-                if person.currentFacility != -1:
-                    airportMap.facilityList[person.currentFacility].people.append(person.id)
 
                 if person.currentFacility == person.destination:
                     if airportMap.facilityList[person.destination].type == 'Exit':
@@ -306,6 +394,12 @@ if __name__ == '__main__':
                         else:
                             pass
 
+                if person.currentFacility != -1:
+                    airportMap.facilityList[person.currentFacility].people.append(person.id)
+
+
+        for f in airportMap.facilityList:
+            timeFacilityPeopleList[t][f] = airportMap.facilityList[f].people
 
         for person in removedPopulation:
             if person in populationMain:
@@ -315,12 +409,21 @@ if __name__ == '__main__':
             populationFront.remove(person)
         populationFtoM = []
 
-    # counter = 0
+    # # error check
+    # # counter = 0
     # for person in removedPopulation:
     #     if person.exitTime - person.enteredTime  + 1 != len(person.movementTrack):
     #         print_person_info(person)
-    #         counter += 1
-    # print(counter)
+    # #         counter += 1
+    # # print(counter)
+
+    generateDataToInfectiousModel(initialInfected, removedPopulation)
+
+
+    # with open('facilityInfectedTime.json', 'w') as json_file:
+    #     json.dump(facilityInfectedTime, json_file)
+    # with open('peopleFacilityTime.json', 'w') as json_file:
+    #     json.dump(peopleFacilityTime, json_file)
 
     # with open('movementTrack.csv', 'w', newline='') as csvfile:
     #     csv_writer = csv.writer(csvfile)
@@ -328,12 +431,7 @@ if __name__ == '__main__':
     #     for person in removedPopulation:
     #         csv_writer.writerow([person.id, person.enteredTime, person.movementTrack, person.exitTime])
     #         print_person_info(person)
-    count = 0
-    for person in removedPopulation:
-        if person.exitTime - person.enteredTime + 1 != len(person.movementTrack):
-            print_person_info(person)
-            count += 1
-    print(count)
+
     print('number of passengers missed the flight:', numMissedPlane)
     print('populationFront: ', len(populationFront))
     print('populationMain: ', len(populationMain))
@@ -341,33 +439,33 @@ if __name__ == '__main__':
 
 
 
+    # visualization
+    pygame.init()
+    screen = pygame.display.set_mode((cg.mapLength, cg.mapWidth))
+    bg_color = cg.backgroundColor
 
-    # pygame.init()
-    # screen = pygame.display.set_mode((cg.mapLength, cg.mapWidth))
-    # bg_color = cg.backgroundColor
+    pygame.display.set_caption("Airport Map")
+    keep_going = True
+    personRadius = cg.personRadius
+    myfont = pygame.font.Font(None, cg.textSize)
+    t = 0
 
-    # pygame.display.set_caption("Airport Map")
-    # keep_going = True
-    # personRadius = cg.personRadius
-    # myfont = pygame.font.Font(None, cg.textSize)
-    # t = 0
-    #
-    # while keep_going:
-    #     screen.fill(bg_color)
-    #     plotFacilities()
-    #     screen.blit(myfont.render('t = ', True, cg.textColor), (10, 10))
-    #     screen.blit(myfont.render(str(t), True, cg.textColor), (36, 10))
-    #
-    #     for person in removedPopulation:
-    #         if person.enteredTime <= t <= person.exitTime:
-    #             currentPosition = person.movementTrack[t-person.enteredTime]
-    #             plotPersonPosition(currentPosition)
-    #
-    #     for event in pygame.event.get():
-    #         if event.type == pygame.QUIT:
-    #             keep_going = False
-    #     pygame.display.update()
-    #     pygame.time.delay(300)
-    #     t += 1
-    #
-    # pygame.quit()
+    while keep_going:
+        screen.fill(bg_color)
+        plotFacilities()
+        screen.blit(myfont.render('t = ', True, cg.textColor), (10, 10))
+        screen.blit(myfont.render(str(t), True, cg.textColor), (36, 10))
+
+        for person in removedPopulation:
+            if person.enteredTime <= t <= person.exitTime:
+                currentPosition = person.movementTrack[t-person.enteredTime]
+                plotPersonPosition(currentPosition)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                keep_going = False
+        pygame.display.update()
+        pygame.time.delay(300)
+        t += 1
+
+    pygame.quit()
