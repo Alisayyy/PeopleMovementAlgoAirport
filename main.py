@@ -1,3 +1,4 @@
+import csv
 import person as person
 import graph as g
 import random
@@ -5,8 +6,6 @@ import numpy as np
 import pygame
 import config as cg
 import math
-import csv
-import json
 
 
 def buildMap():
@@ -36,135 +35,8 @@ def buildMap():
 
     airportMap.connectAllFacilities()
 
-    # # print connectivity info
-    # for fa in airportMap.facilityList:
-    #     print("Facility Name: ", airportMap.facilityList[fa].name)
-    #     print("Out Neighbour: ", end=" ")
-    #     for nfa in airportMap.facilityList[fa].outNeighbor:
-    #         print(airportMap.facilityList[nfa].name, end=" ")
-    #     print("\n")
     return airportMap
 
-
-def calTimeSpent(medium, variance):
-    return abs(int(np.random.normal(medium, variance))) + 1
-
-
-def normalize(probList):
-    sumofProb = sum(probList)
-    for i in range(len(probList)):
-        probList[i] = probList[i] / sumofProb
-    return probList
-
-
-def compute_next_location(person, airportMap, t):
-    sequence = []
-    currentFacility = airportMap.facilityList[person.currentFacility]
-    prob_a = []
-    prob_b = []
-    prob_c = []
-    prob_d = []
-
-    if person.departureTime is not None:
-        if person.departureTime - t <= cg.boardingDecisionTime:
-            person.nextFacility = person.destination
-            person.toBeAppend[0] = int(
-                airportMap.getDistance(person.currentFacility, person.nextFacility) / person.speed)
-            person.toBeAppend[1] = person.departureTime - t
-            return
-
-    for id in currentFacility.outNeighbor:
-        sequence.append(id)
-        nextFacility = airportMap.facilityList[id]
-        # distance between current and next facility
-        prob_a.append(1 / airportMap.getDistance(person.currentFacility, id))
-
-        # distance between next facility and destination
-        if id == person.destination:
-            prob_b.append(1)
-        else:
-            prob_b.append(1 / airportMap.getDistance(id, person.destination))
-
-        # facility type
-        if nextFacility.type == 'Gate' and id != person.destination:
-            prob_c.append(0)
-        elif person.departureTime is not None and (nextFacility.type == 'BC' or nextFacility.type == 'Exit'):
-            prob_c.append(0)
-        elif nextFacility.type == currentFacility.type:
-            prob_c.append(0.1)
-        else:
-            prob_c.append(1)
-
-        # occupancy of current and next facility
-        prob_d.append(abs(nextFacility.lastMinNumPeople - nextFacility.maxOccupancy) / nextFacility.maxOccupancy)
-
-        # f. probability of staying (a function of ...)
-
-        # e. override all other prob
-        # 1- (exit time - current time) / (exit time - entered time), hop to next
-        # set all previous facilities to zero, set the remaining to be prob * (1/distance)
-
-    prob_a = normalize(prob_a)
-    prob_b = normalize(prob_b)
-    prob_c = normalize(prob_c)
-    prob_d = normalize(prob_d)
-
-    # combining all factors into one probability list
-    length = len(sequence)
-    final_prob = []
-    for i in range(length):
-        if prob_a[i] == 0 or prob_b[i] == 0 or prob_c[i] == 0 or prob_a[i] == 0:
-            # or sequence[i] in person.facilityPassed
-            final_prob.append(0)
-        else:
-            final_prob.append(cg.weight_1*prob_a[i] + cg.weight_2*prob_b[i] + cg.weight_3*prob_c[i] + cg.weight_4*prob_d[i])
-
-    if sum(final_prob) != 0:
-
-        final_prob = normalize(final_prob)
-
-        # choose the nextFacility based on probability list
-        person.nextFacility = random.choices(sequence, final_prob)[0]
-        if person.nextFacility != person.destination:
-            person.facilityPassed.add(person.nextFacility)
-        nextFacility = airportMap.facilityList[person.nextFacility]
-    else:
-        print("here")
-        person.nextFacility =person.destination
-        nextFacility = airportMap.facilityList[person.nextFacility]
-
-
-    person.toBeAppend[0] = int(airportMap.getDistance(person.currentFacility, person.nextFacility) / person.speed)
-    person.toBeAppend[1] = calTimeSpent(nextFacility.medium, nextFacility.variance)
-    return
-
-
-def plotFacilities():
-    for i in range(len(cg.facilityInfo)):
-        screen.blit(myfont.render(cg.facilityInfo[i][0], True, (255, 0, 0)),
-                    (cg.facilityInfo[i][2], cg.facilityInfo[i][3] - 20))
-        pygame.draw.rect(screen, [255, 0, 0], [cg.facilityInfo[i][2], cg.facilityInfo[i][3],
-                                               cg.facilityBoxSize, cg.facilityBoxSize], 2)
-
-def plotPersonPosition(currentPosition):
-    if currentPosition != -1:
-        pygame.draw.circle(screen, person.color, (cg.facilityInfo[currentPosition][2] + cg.facilityBoxSize/2 + random.randint(-15, 15),
-                                                  cg.facilityInfo[currentPosition][3] + cg.facilityBoxSize/2 + random.randint(-15, 15)),
-                           cg.personRadius)
-
-
-def print_person_info(person):
-    print('id = ', person.id)
-    print('entered time = ', person.enteredTime)
-    print('exit time = ', person.exitTime)
-    print('departure time = ', person.departureTime)
-    print(person.movementTrack)
-    print('length of movementTrack = ', len(person.movementTrack))
-    print('current location = ', person.currentFacility)
-    print('destination = ', person.destination)
-    print('next facility = ', person.nextFacility)
-    print('facilities passed = ', person.facilityPassed)
-    print('\n')
 
 def setInfected():
     probability = random.random()
@@ -172,6 +44,7 @@ def setInfected():
         return 1
     else:
         return 0
+
 
 def createPopulation():
     populationFront, populationMain, removedPopulation, populationFtoM, initialInfected = [], [], [], [], []
@@ -190,8 +63,6 @@ def createPopulation():
                 for key, value in connectedInfo.items():
                     for i in range(c, c+value):
                         infect = setInfected()
-                        # if (infect):
-                        #     initialInfected.append(i)
                         populationMain.append(person.Person(i, cg.flightInfo[key][1], infected=infect, currentFacility=gate,
                                                             arrivalTime=time, departureTime=cg.flightInfo[key][2],
                                                             enteredTime=time + int((i-cBeforeCurrent)/cg.num_people_off_plane)))
@@ -201,8 +72,6 @@ def createPopulation():
                     numConnected += value
             for i in range(c, c + totalPassenger - numConnected):
                 infect = setInfected()
-                # if (infect):
-                #     initialInfected.append(i)
                 populationMain.append(person.Person(i, exitId, infected=infect, currentFacility=gate, arrivalTime=time,
                                                     enteredTime=time + int((i-cBeforeCurrent)/cg.num_people_off_plane)))
                 if infect:
@@ -214,8 +83,6 @@ def createPopulation():
             numPassengerNotConnected = flightInfo[4]
             for i in range(c, c+numPassengerNotConnected):
                 infect = setInfected()
-                # if (infect):
-                #     initialInfected.append(i)
                 checked = random.random() > (1 - cg.rate_self_checked)
                 enteredTime = random.randint(time-cg.maxBefore, time-cg.minBefore)
                 populationFront.append(person.Person(i, gate, infected=infect, checked=checked, departureTime=time, enteredTime= enteredTime))
@@ -241,7 +108,95 @@ def findLeastSecurity(security):
             least = s
     return least
 
-def generateDataToInfectiousModel(initialInfected, removedPopulation):
+
+def calTimeSpent(medium, variance):
+    return abs(int(np.random.normal(medium, variance))) + 1
+
+
+def normalize(probList):
+    sumofProb = sum(probList)
+    for i in range(len(probList)):
+        probList[i] = probList[i] / sumofProb
+    return probList
+
+
+def compute_next_location(person, airportMap, t):
+    sequence = []
+    currentFacility = airportMap.facilityList[person.currentFacility]
+    prob_a = []
+    prob_b = []
+    prob_c = []
+    prob_d = []
+
+    if person.departureTime is not None:
+        # Force person to go to destination if within certain minutes of departure
+        if person.departureTime - t <= cg.boardingDecisionTime:
+            person.nextFacility = person.destination
+            person.toBeAppend[0] = int(
+                airportMap.getDistance(person.currentFacility, person.nextFacility) / person.speed)
+            person.toBeAppend[1] = person.departureTime - t
+            return
+
+    for id in currentFacility.outNeighbor:
+        sequence.append(id)
+        nextFacility = airportMap.facilityList[id]
+
+        # a. distance between current and next facility
+        prob_a.append(1 / airportMap.getDistance(person.currentFacility, id))
+
+        # b. distance between next facility and destination
+        if id == person.destination:
+            prob_b.append(1)
+        else:
+            prob_b.append(1 / airportMap.getDistance(id, person.destination))
+
+        # c. facility type
+        if nextFacility.type == 'Gate' and id != person.destination:
+            prob_c.append(0)
+        elif person.departureTime is not None and (nextFacility.type == 'BC' or nextFacility.type == 'Exit'):
+            prob_c.append(0)
+        elif nextFacility.type == currentFacility.type:
+            prob_c.append(0.1)
+        else:
+            prob_c.append(1)
+
+        # d. occupancy of current and next facility
+        prob_d.append(abs(nextFacility.lastMinNumPeople - nextFacility.maxOccupancy) / nextFacility.maxOccupancy)
+
+        # TODO: Other factors?
+
+    prob_a = normalize(prob_a)
+    prob_b = normalize(prob_b)
+    prob_c = normalize(prob_c)
+    prob_d = normalize(prob_d)
+
+    # combining all factors into one probability list
+    length = len(sequence)
+    final_prob = []
+    for i in range(length):
+        if prob_a[i] == 0 or prob_b[i] == 0 or prob_c[i] == 0 or prob_a[i] == 0:
+            final_prob.append(0)
+        else:
+            final_prob.append(cg.weight_1*prob_a[i] + cg.weight_2*prob_b[i] + cg.weight_3*prob_c[i] + cg.weight_4*prob_d[i])
+
+    if sum(final_prob) != 0:
+        final_prob = normalize(final_prob)
+        # choose the nextFacility based on probability list
+        person.nextFacility = random.choices(sequence, final_prob)[0]
+        if person.nextFacility != person.destination:
+            person.facilityPassed.add(person.nextFacility)
+        nextFacility = airportMap.facilityList[person.nextFacility]
+    else:
+        person.nextFacility =person.destination
+        nextFacility = airportMap.facilityList[person.nextFacility]
+
+    person.toBeAppend[0] = int(airportMap.getDistance(person.currentFacility, person.nextFacility) / person.speed)
+    person.toBeAppend[1] = calTimeSpent(nextFacility.medium, nextFacility.variance)
+    return
+
+
+# Convert data to a format that the infectious model takes in
+def DataFormatConverter(initialInfected, removedPopulation):
     facilityInfectedTime = {}
     peopleFacilityTime = {}
     # create facilityInfectedTime
@@ -294,16 +249,42 @@ def generateDataToInfectiousModel(initialInfected, removedPopulation):
         f.write("}\n")
 
 
+def plotFacilities(screen, myfont):
+    for i in range(len(cg.facilityInfo)):
+        screen.blit(myfont.render(cg.facilityInfo[i][0], True, (255, 0, 0)),
+                    (cg.facilityInfo[i][2], cg.facilityInfo[i][3] - 20))
+        pygame.draw.rect(screen, [255, 0, 0], [cg.facilityInfo[i][2], cg.facilityInfo[i][3],
+                                               cg.facilityBoxSize, cg.facilityBoxSize], 2)
+
+def plotPersonPosition(screen, person, currentPosition):
+    if currentPosition != -1:
+        pygame.draw.circle(screen, person.color, (cg.facilityInfo[currentPosition][2] + cg.facilityBoxSize/2 + random.randint(-15, 15),
+                                                  cg.facilityInfo[currentPosition][3] + cg.facilityBoxSize/2 + random.randint(-15, 15)),
+                           cg.personRadius)
 
 
-if __name__ == '__main__':
+def print_person_info(person):
+    print('id = ', person.id)
+    print('entered time = ', person.enteredTime)
+    print('exit time = ', person.exitTime)
+    print('departure time = ', person.departureTime)
+    print(person.movementTrack)
+    print('length of movementTrack = ', len(person.movementTrack))
+    print('current location = ', person.currentFacility)
+    print('destination = ', person.destination)
+    print('next facility = ', person.nextFacility)
+    print('facilities passed = ', person.facilityPassed)
+    print('\n')
+
+
+def run_simulation(pygameFlag, exportData, errorCheckingFlag):
     airportMap = buildMap()
+
     # initialize passengers based on flight information
     populationFront, populationMain, removedPopulation, populationFtoM, initialInfected = createPopulation()
     numMissedPlane = 0
-    # data to export
+    # default saved data
     timeFacilityPeopleList = {}
-
 
     t = 0
     for t in range(cg.runningTimesteps):
@@ -313,20 +294,22 @@ if __name__ == '__main__':
         # and clear people list to create new one for this timestep
         for facility in airportMap.facilityList:
             airportMap.facilityList[facility].lastMinNumPeople = len(airportMap.facilityList[facility].people)
-            airportMap.facilityList[facility].people = []
+        airportMap.facilityList[facility].people = []
 
-        # front
+        # Counter and Security area
+        # every person must go through security, and have a probability of going to check bag or not
+        # assume every person will find the counter/security with the least number of people in line
         for person in populationFront:
             if t >= person.enteredTime:
                 # find counter
                 if person.currentFacility == None and not person.checked:
-                    # find a counter and get in queue
+                # find a counter and get in queue
                     c = findLeastCounter(airportMap.counter)
                     c.peopleInLine.enqueue(person)
                     person.currentFacility = c.id
                 # find security
                 elif person.currentFacility == None and person.checked:
-                    # find a security and get in queue
+                # find a security and get in queue
                     s = findLeastSecurity(airportMap.security)
                     s.peopleInLine.enqueue(person)
                     person.currentFacility = s.id
@@ -335,7 +318,7 @@ if __name__ == '__main__':
                 if person.currentFacility is not None and person.currentFacility != -1:
                     airportMap.facilityList[person.currentFacility].people.append(person.id)
 
-        # process each counter
+        # process the queue of each counter
         for c in airportMap.counter:
             if not c.peopleInLine.empty():
                 c.timeCounter += 1
@@ -344,7 +327,7 @@ if __name__ == '__main__':
                     person.currentFacility = None
                     person.checked = True
                     c.timeCounter = 0
-        # process each security
+        # process the queue of each security
         for s in airportMap.security:
             if not s.peopleInLine.empty():
                 s.timeCounter += 1
@@ -353,27 +336,27 @@ if __name__ == '__main__':
                     populationFtoM.append(person)
                     s.timeCounter = 0
 
-        # main
+        # Main departure hall
         for person in populationMain:
             if t >= person.enteredTime:
-                # still in hallway
+                # walking in the hallway to get to the next facility
                 if person.toBeAppend[0] != 0:
                     person.currentFacility = -1
                     person.toBeAppend[0] -= 1
+                # spending time inside a facility
                 else:
                     if person.toBeAppend[1] != 0:
                         if person.nextFacility is not None:
                             person.currentFacility = person.nextFacility
                             person.nextFacility = None
                         person.toBeAppend[1] -= 1
-                    # if person.currentFacility != 12 and person.currentFacility != person.destination and person.toBeAppend[1] == 0:
-                    # if person.currentFacility != person.destination and person.toBeAppend[1] == 0:
                     if airportMap.facilityList[person.currentFacility].type != 'Exit' and person.toBeAppend[1] == 0:
                         compute_next_location(person, airportMap, t)
 
                 # append current position
                 person.movementTrack.append(person.currentFacility)
 
+                # when person arrive at their assigned destination
                 if person.currentFacility == person.destination:
                     if airportMap.facilityList[person.destination].type == 'Exit':
                         person.exitTime = t
@@ -397,7 +380,6 @@ if __name__ == '__main__':
                 if person.currentFacility != -1:
                     airportMap.facilityList[person.currentFacility].people.append(person.id)
 
-
         for f in airportMap.facilityList:
             timeFacilityPeopleList[t][f] = airportMap.facilityList[f].people
 
@@ -407,65 +389,63 @@ if __name__ == '__main__':
         for person in populationFtoM:
             populationMain.append(person)
             populationFront.remove(person)
-        populationFtoM = []
-
-    # # error check
-    # # counter = 0
-    # for person in removedPopulation:
-    #     if person.exitTime - person.enteredTime  + 1 != len(person.movementTrack):
-    #         print_person_info(person)
-    # #         counter += 1
-    # # print(counter)
-
-    generateDataToInfectiousModel(initialInfected, removedPopulation)
-
-
-    # with open('facilityInfectedTime.json', 'w') as json_file:
-    #     json.dump(facilityInfectedTime, json_file)
-    # with open('peopleFacilityTime.json', 'w') as json_file:
-    #     json.dump(peopleFacilityTime, json_file)
-
-    # with open('movementTrack.csv', 'w', newline='') as csvfile:
-    #     csv_writer = csv.writer(csvfile)
-    #     csv_writer.writerow(['ID', 'enteredTime', 'movementTrack', 'exitTime'])
-    #     for person in removedPopulation:
-    #         csv_writer.writerow([person.id, person.enteredTime, person.movementTrack, person.exitTime])
-    #         print_person_info(person)
+        populationFtoM= []
 
     print('number of passengers missed the flight:', numMissedPlane)
     print('populationFront: ', len(populationFront))
     print('populationMain: ', len(populationMain))
     print('removedPopulation:', len(removedPopulation))
 
-
-
-    # visualization
-    pygame.init()
-    screen = pygame.display.set_mode((cg.mapLength, cg.mapWidth))
-    bg_color = cg.backgroundColor
-
-    pygame.display.set_caption("Airport Map")
-    keep_going = True
-    personRadius = cg.personRadius
-    myfont = pygame.font.Font(None, cg.textSize)
-    t = 0
-
-    while keep_going:
-        screen.fill(bg_color)
-        plotFacilities()
-        screen.blit(myfont.render('t = ', True, cg.textColor), (10, 10))
-        screen.blit(myfont.render(str(t), True, cg.textColor), (36, 10))
-
+    if errorCheckingFlag:
+        errorCounter = 0
         for person in removedPopulation:
-            if person.enteredTime <= t <= person.exitTime:
-                currentPosition = person.movementTrack[t-person.enteredTime]
-                plotPersonPosition(currentPosition)
+            if person.exitTime - person.enteredTime + 1 != len(person.movementTrack):
+                print_person_info(person)
+                errorCounter += 1
+        print(errorCounter)
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                keep_going = False
-        pygame.display.update()
-        pygame.time.delay(300)
-        t += 1
+    if exportData:
+        with open('movementTrack.csv', 'w', newline='') as csvfile:
+            csv_writer = csv.writer(csvfile)
+            csv_writer.writerow(['ID', 'enteredTime', 'movementTrack', 'exitTime'])
+            for person in removedPopulation:
+                csv_writer.writerow([person.id, person.enteredTime, person.movementTrack, person.exitTime])
+                # print_person_info(person)
 
-    pygame.quit()
+        DataFormatConverter(initialInfected, removedPopulation)
+
+    # pygame visualization
+    if pygameFlag:
+        pygame.init()
+        screen = pygame.display.set_mode((cg.mapLength, cg.mapWidth))
+        bg_color = cg.backgroundColor
+
+        pygame.display.set_caption("Airport Map")
+        keep_going = True
+        myfont = pygame.font.Font(None, cg.textSize)
+
+        while keep_going:
+            screen.fill(bg_color)
+            plotFacilities(screen, myfont)
+            screen.blit(myfont.render('t = ', True, cg.textColor), (10, 10))
+            screen.blit(myfont.render(str(t), True, cg.textColor), (36, 10))
+
+            for person in removedPopulation:
+                if person.enteredTime <= t <= person.exitTime:
+                    currentPosition = person.movementTrack[t - person.enteredTime]
+                    plotPersonPosition(screen, person, currentPosition)
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    keep_going = False
+            pygame.display.update()
+            pygame.time.delay(300)
+
+        pygame.quit()
+
+
+if __name__ == '__main__':
+    pygameFlag = True
+    exportData = True
+    errorCheckingFlag = False
+    run_simulation(pygameFlag, exportData, errorCheckingFlag)

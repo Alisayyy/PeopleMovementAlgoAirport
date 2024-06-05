@@ -1,4 +1,3 @@
-import person as person
 import myQueue
 
 class Facility:
@@ -18,7 +17,6 @@ class Facility:
         if self.type == "Counter" or self.type == "Security":
             self.peopleInLine = myQueue.Queue()
             self.timeCounter = 0
-
 
     def addOutNeighbor(self, nbrid, weight):
         self.outNeighbor[nbrid] = weight

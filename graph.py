@@ -1,5 +1,6 @@
 import facility as facility
 
+
 class Graph:
     def __init__(self, distanceMap):
         self.facilityList = {}

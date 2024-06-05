@@ -5,7 +5,6 @@ textSize = 25
 personRadius = 5
 facilityBoxSize = 38
 
-
 # departure
 rate_self_checked = 0.1
 check_time = 2 # min
@@ -14,7 +13,6 @@ maxBefore = 200 # if the plane departures at t, earliest person will come to air
 minBefore = 100 # if the plane departures at t, latest person will come to airport at t-100
 boardingTime = 30 # min before departure time
 boardingDecisionTime = 40
-
 
 # arrival
 num_people_off_plane = 15  # per min
@@ -54,13 +52,11 @@ facilityInfo = {
     18: ['security3',      'Security',  350, 150, None,   None,  None]
 }
 
-
 # weight of different factors when calculating the next facility
 weight_1 = 0.1 # distance between current and next facility
 weight_2 = 0.7 # distance between next facility and destination
 weight_3 = 0.1 # facility type
 weight_4 = 0.1 # occupancy of current and next facility
-
 
 # total timesteps for simulation
 runningTimesteps = 300
@@ -70,6 +66,4 @@ minWalkingSpeed = 30
 maxWalkingSpeed = 40
 
 # percentage of passengers that are initially infected
-percentageInfected = 0.5
-
-
+percentageInfected = 0.1
